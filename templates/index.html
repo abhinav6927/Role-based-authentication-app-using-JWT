@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AVYR IT SOLUTIONS</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .link {
+      text-align: center;
+      margin-top: 15px;
+    }
+    .link a {
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .link a:hover {
+      text-decoration: underline;
+    }
+    .hidden {
+      display: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="loginPage">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <label for="loginUsername">Username</label>
+      <input type="text" id="loginUsername" required />
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" required />
+      <button type="submit">Login</button>
+    </form>
+    <div class="link">
+      <p>No account? <a id="showRegisterBtn">Register</a></p>
+    </div>
+  </div>
+
+  <div class="container hidden" id="registerPage">
+    <h2>Register</h2>
+    <form id="registerForm">
+      <label for="registerUsername">Username</label>
+      <input type="text" id="registerUsername" required />
+      <label for="registerPassword">Password</label>
+      <input type="password" id="registerPassword" required />
+      <button type="submit">Register</button>
+    </form>
+    <div class="link">
+      <p>Have an account? <a id="showLoginBtn">Login</a></p>
+    </div>
+  </div>
+
+  <div class="container hidden" id="studentDashboard">
+    <h2>Welcome Student</h2>
+    <p>You are logged in as <span id="studentName"></span></p>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div class="container hidden" id="adminDashboard">
+    <h2>Admin Dashboard</h2>
+    <p>Logged in as <span id="adminName"></span></p>
+
+    <h3>Create New User</h3>
+    <form id="createUserForm">
+      <label for="newUsername">Username</label>
+      <input type="text" id="newUsername" required />
+      <label for="newPassword">Password</label>
+      <input type="password" id="newPassword" required />
+      <label for="newRole">Role</label>
+      <select id="newRole" required>
+        <option value="student">Student</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button type="submit">Create User</button>
+    </form>
+
+    <h3>All Users</h3>
+    <table id="userTable">
+      <thead>
+        <tr><th>ID</th><th>Username</th><th>Role</th><th>Created</th><th>Action</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    let token = ''
+    let role = ''
+
+    const loginPage = document.getElementById('loginPage');
+    const registerPage = document.getElementById('registerPage');
+    const adminDashboard = document.getElementById('adminDashboard');
+    const studentDashboard = document.getElementById('studentDashboard');
+
+    document.getElementById('showRegisterBtn').onclick = () => {
+      loginPage.classList.add('hidden');
+      registerPage.classList.remove('hidden');
+    };
+
+    document.getElementById('showLoginBtn').onclick = () => {
+      registerPage.classList.add('hidden');
+      loginPage.classList.remove('hidden');
+    };
+
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      if (res.status === 200) {
+        token = data.access_token;
+        role = data.role;
+        if (role === 'admin') {
+          document.getElementById('adminName').textContent = username;
+          loginPage.classList.add('hidden');
+          adminDashboard.classList.remove('hidden');
+          fetchUsers();
+        } else {
+          document.getElementById('studentName').textContent = username;
+          loginPage.classList.add('hidden');
+          studentDashboard.classList.remove('hidden');
+        }
+      } else {
+        alert(data.message);
+      }
+    };
+
+    document.getElementById('registerForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('registerUsername').value;
+      const password = document.getElementById('registerPassword').value;
+
+      const res = await fetch('/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      alert(data.message);
+      if (res.status === 200) {
+        registerPage.classList.add('hidden');
+        loginPage.classList.remove('hidden');
+      }
+    };
+
+    document.getElementById('createUserForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('newUsername').value;
+      const password = document.getElementById('newPassword').value;
+      const role = document.getElementById('newRole').value;
+
+      const res = await fetch('/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ username, password, role })
+      });
+
+      const data = await res.json();
+      alert(data.message);
+      if (res.status === 200) fetchUsers();
+    };
+
+    async function fetchUsers() {
+      const res = await fetch('/users', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      const tbody = document.querySelector('#userTable tbody');
+      tbody.innerHTML = '';
+      data.forEach(user => {
+        const row = `<tr>
+          <td>${user.id}</td>
+          <td>${user.username}</td>
+          <td>${user.role}</td>
+          <td>${user.created_at}</td>
+          <td><button onclick="deleteUser(${user.id})">Delete</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    async function deleteUser(id) {
+      const res = await fetch(`/users/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      alert(data.message);
+      fetchUsers();
+    }
+
+    function logout() {
+      token = '';
+      role = '';
+      adminDashboard.classList.add('hidden');
+      studentDashboard.classList.add('hidden');
+      loginPage.classList.remove('hidden');
+    }
+  </script>
+
+</body>
+</html>
