@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# Database
+database.db
+*.sqlite3
+
+# IDE and OS specific
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
